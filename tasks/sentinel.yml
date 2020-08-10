@@ -5,6 +5,7 @@
     state: directory
     recurse: yes
     owner: "{{ redis_user }}"
+  become: true
 
 - name: create sentinel init script
   template:
@@ -13,6 +14,7 @@
     mode: 0755
   # Choose the distro-specific template. We must specify the templates
   # path here because with_first_found tries to find files in files/
+  become: true
   with_first_found:
     - files:
       - "{{ ansible_os_family }}/redis_sentinel.init.j2"
@@ -26,6 +28,7 @@
     src: "{{ item }}"
     dest: /etc/systemd/system/sentinel_{{ redis_sentinel_port }}.service
     mode: 0644
+  become: true
   with_first_found:
     - files:
       - "{{ ansible_os_family }}/redis_sentinel.service.j2"
@@ -40,6 +43,7 @@
     src: etc/tmpfiles.d/redis.conf.j2
     dest: /etc/tmpfiles.d/redis.conf
     mode: 0644
+  become: true
   when:
     - redis_as_service
     - ansible_service_mgr|default() == "systemd"
@@ -48,6 +52,7 @@
 - name: reload systemd daemon
   systemd:
     daemon_reload: true
+  become: true
   when:
     - redis_as_service
     - ansible_service_mgr|default() == "systemd"
@@ -57,6 +62,7 @@
   service:
     name: sentinel_{{ redis_sentinel_port }}
     enabled: yes
+  become: true
   when: redis_as_service
 
 # Check then create log dir to prevent aggressively overwriting permissions
@@ -73,6 +79,7 @@
     path: "{{ redis_sentinel_logfile|dirname }}"
     owner: "{{ redis_user }}"
     group: "{{ redis_group }}"
+  become: true
   when:
     - redis_sentinel_logfile != '""'
     - not sentinel_logdir.stat.exists
@@ -83,6 +90,7 @@
     path: "{{ redis_sentinel_logfile }}"
     owner: "{{ redis_user }}"
     group: "{{ redis_group }}"
+  become: true
   when: redis_sentinel_logfile != '""'
 
 - name: check if sentinel pid directory exists
@@ -98,6 +106,7 @@
     path: "{{ redis_sentinel_pidfile|dirname }}"
     owner: "{{ redis_user }}"
     group: "{{ redis_group }}"
+  become: true
   when:
     - redis_sentinel_pidfile != '""'
     - not sentinel_piddir.stat.exists
@@ -108,12 +117,14 @@
     dest: /etc/redis/sentinel_{{ redis_sentinel_port }}.conf
     owner: "{{ redis_user }}"
     mode: 0640
+  become: true
   notify: "restart sentinel"
 
 - name: add sentinel init config file
   template:
     dest: /etc/sysconfig/sentinel_{{ redis_sentinel_port }}
     src: redis.init.conf.j2
+  become: true
   when: ansible_os_family == "RedHat"
   notify: "restart sentinel"
 
@@ -121,6 +132,7 @@
   template:
     dest: /etc/default/sentinel_{{ redis_sentinel_port }}
     src: redis.init.conf.j2
+  become: true
   when: ansible_os_family == "Debian"
   notify: "restart sentinel"
 

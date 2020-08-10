@@ -6,6 +6,7 @@
     state: present
     reload: yes
     ignoreerrors: yes
+  become: true
   when: redis_travis_ci is not defined
 
 - name: compile redis
@@ -13,18 +14,21 @@
   args:
     chdir: /usr/local/src/redis-{{ redis_version }}
     creates: /usr/local/src/redis-{{ redis_version }}/src/redis-server
+  become: true
 
 - name: create redis install directory
   file:
     path: "{{ redis_install_dir }}"
     state: directory
     mode: 0755
+  become: true
 
 - name: create /etc/redis
   file:
     path: /etc/redis
     state: directory
     mode: 0755
+  become: true
 
 - name: check if redis user exists (ignore errors)
   command: id {{ redis_user }}
@@ -36,6 +40,7 @@
   group:
     name: "{{ redis_group }}"
     state: present
+  become: true
   when: user_exists is failed
 
 - name: add redis user
@@ -46,6 +51,7 @@
     home: "{{ redis_install_dir }}"
     shell: /bin/false
     system: yes
+  become: true
   when: user_exists is failed
 
 - name: create /var/run/redis
@@ -53,12 +59,14 @@
     path: /var/run/redis
     state: directory
     owner: "{{ redis_user }}"
+  become: true
 
 - name: install redis
   shell: umask 0022 && make PREFIX={{ redis_install_dir }} install
   args:
     chdir: /usr/local/src/redis-{{ redis_version }}
     creates: "{{ redis_install_dir }}/bin/redis-server"
+  become: true
 
 - name: list redis binaries to add to alternatives
   command: ls -1 {{ redis_install_dir }}/bin
@@ -70,5 +78,6 @@
     name: "{{ item }}"
     path: "{{ redis_install_dir }}/bin/{{ item }}"
     link: "/usr/bin/{{ item }}"
+  become: true
   with_items: "{{ redis_binaries.stdout_lines }}"
   when: redis_binaries is succeeded

@@ -10,6 +10,7 @@
     update_cache: yes
     cache_valid_time: 86400
     state: present
+  become: true
   when: ansible_os_family == "Debian"
 
 - name: install redhat dependencies
@@ -18,6 +19,7 @@
        - gcc
        - make
     state: present
+  become: true
   when: ansible_os_family == "RedHat"
 
 # Conditionally install the i686 build of libgcc if we are building 32-bit
@@ -27,6 +29,7 @@
   yum:
     name: libgcc
     state: latest
+  become: true
   when: ansible_os_family == "RedHat" and redis_make_32bit|bool
   tags:
     - skip_ansible_lint
@@ -37,6 +40,7 @@
       - libgcc.i686
       - glibc-devel.i686
     state: latest
+  become: true
   when: ansible_os_family == "RedHat" and redis_make_32bit|bool
   tags:
     - skip_ansible_lint
@@ -50,4 +54,5 @@
       - "{{ 'gcc-32bit' if redis_make_32bit|bool else 'gcc' }}"
       - "{{ 'libgcc_s1-32bit' if redis_make_32bit|bool else 'gcc' }}"
     state: present
+  become: true
   when: ansible_os_family == 'Suse'
